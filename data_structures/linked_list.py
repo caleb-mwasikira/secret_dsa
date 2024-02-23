@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, Union
 
 from data_structures.node import Node
 
@@ -13,6 +13,25 @@ class LinkedList:
 		self.name = str(uuid.uuid4()).split("-")[0]
 		self.head = None
 		self.insert_at_end(*items)
+
+	@classmethod
+	def from_head(cls, head: Node):
+		"""Build a linked list from a head node
+
+		Args:
+			head (Node): head of linked list
+
+		Returns:
+			_type_: LinkedList
+		"""
+		current_node: Node = head
+		node_items: list[int] = []
+
+		while current_node is not None:
+			node_items.append(current_node.data)
+			current_node = current_node.next_node
+
+		return cls(*node_items)
 
 	def insert_at_head(self, *items: int) -> bool:
 		"""Inserts elements at head of linked list"""
@@ -74,8 +93,7 @@ class LinkedList:
 
 		if self.is_empty():
 			data = items.pop(0)
-			new_node = Node(data)
-			self.head = new_node
+			self.head = Node(data)
 
 		last_node = self.head
 		while last_node.next_node is not None:
@@ -88,9 +106,9 @@ class LinkedList:
 
 		return True
 
-	def get_node_at_index(self, index: int) -> Optional[Node]:
+	def get_node_at_index(self, index: int) -> Node:
 		if not self.within_range(index):
-			raise IndexError(f"Index {index} is out of bounds for linked list with range(0, {self().size - 1})")
+			raise IndexError(f"Index {index} is out of bounds for linked list with range(0, {self.size() - 1})")
 
 		# traverse to node just before the required index of the new node
 		node = self.head
@@ -100,17 +118,31 @@ class LinkedList:
 
 		return node
 
-	def search(self, value: int) -> tuple[int, Optional[Node]]:
+	def search(self, value: int, ret_type: Union[int, Node] = int) -> Optional[Union[int, Node]]:
 		current_node = self.head
 		index = 0
 
-		while current_node is not None:
+		while current_node is not None:				
 			if current_node.data == value:
-				return index, current_node
+				return current_node.data if ret_type is int else current_node
+			
 			current_node = current_node.next_node
 			index += 1
 
-		return -1, None
+		return None
+	
+	def index_of_node(self, node: Node) -> Optional[int]:
+		current_node = self.head
+		index = 0
+
+		while current_node is not None:				
+			if current_node == node:
+				return index
+			
+			current_node = current_node.next_node
+			index += 1
+
+		return None
 
 	def delete_last_node(self) -> Optional[Node]:
 		if self.is_empty():
@@ -130,13 +162,24 @@ class LinkedList:
 		deleted_node = current_node.next_node
 		current_node.next_node = None
 		return deleted_node
-
-	def delete_at_index(self, index: int) -> Optional[Node]:
-		if self.is_empty():
-			return None
-
+	
+	def delete_after_index(self, index: int) -> list[int]:
 		if not self.within_range(index):
-			raise IndexError(f"Index {index} is out of bounds for linked list with range(0, {self().size - 1})")
+			raise IndexError(f"Index {index} is out of bounds for linked list with range(0, {self.size() - 1})")
+		
+		# Get all indexes after index
+		deleted_nodes = self.items(index + 1)
+		
+		# Get node at index and change its next_node to point to NULL
+		index_node = self.get_node_at_index(index)
+		if index_node is not None:
+			index_node.next_node = None
+		
+		return deleted_nodes			
+
+	def delete_at_index(self, index: int) -> Node:
+		if not self.within_range(index):
+			raise IndexError(f"Index {index} is out of bounds for linked list with range(0, {self.size() - 1})")
 
 		if index == 0:
 			deleted_node = self.head
@@ -154,6 +197,9 @@ class LinkedList:
 		return deleted_node
 
 	def within_range(self, index: int) -> bool:
+		if self.is_empty():
+			return False
+		
 		size = self.size()
 		return 0 <= index < size
 
@@ -171,9 +217,9 @@ class LinkedList:
 
 		return count
 
-	def items(self, start_index: int = 0, stop_index: Optional[int] = None) -> list[int]:
+	def items(self, start_index: int = 0, stop_index: Optional[int] = None, ret_type: Union[int, Node] = int) -> list[Union[int, Node]]:
 		"""Returns a list of all node data between start_index and stop_index"""
-		nodes: list[int] = []
+		node_items = []
 		last_index = self.size() - 1
 
 		# set -ve start_indexes to 0
@@ -186,30 +232,31 @@ class LinkedList:
 		if not self.within_range(stop_index):
 			stop_index = last_index
 
-
 		# swap start_index and stop_index if start_index > stop_index
 		# order does not matter, we are only looking for a valid range
 		if start_index > stop_index:
 			temp = start_index
 			start_index = stop_index
 			stop_index = temp
-		
 
 		start_node = self.get_node_at_index(start_index)
 		if start_node is None:
-			return nodes
+			return node_items
 			
 		current_node = start_node
 		index = start_index
 
 		while current_node is not None and index <= stop_index:
-			nodes.append(current_node.data)
+			if ret_type is int:
+				node_items.append(current_node.data)
+			else:
+				node_items.append(current_node)
+
 			current_node = current_node.next_node
 			index += 1
 
-		return nodes
+		return node_items
 			
-
 	def __repr__(self):
 		nodes: list[str] = []
 
@@ -222,7 +269,7 @@ class LinkedList:
 			if current_node == self.head:
 				nodes.append(f"[Head: {current_node.data}]")
 			elif current_node.next_node is None:
-				nodes.append(f"[Tail: {current_node.data}] -> ?\n")
+				nodes.append(f"[Tail: {current_node.data}] -> ?")
 			else:
 				nodes.append(f"[{current_node.data}]")
 

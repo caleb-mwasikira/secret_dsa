@@ -2,73 +2,59 @@
 import random
 
 from data_structures.linked_list import LinkedList
+from data_structures.n_headed_linked_list import NHeadedLinkedList, find_intersection
 
 
 def random_array(arr_len: int, min_value: int = 0, max_value: int = 10) -> list[int]:
-    rand_arr = []
+	rand_arr = []
 
-    if arr_len < 0 or min_value > max_value:
-        return rand_arr
+	if arr_len < 0 or min_value > max_value:
+		return rand_arr
 
-    random.seed()
-    for _ in range(0, arr_len):
-        random_number = random.randint(min_value, max_value)
-        rand_arr.append(random_number)
+	random.seed()
+	for _ in range(0, arr_len):
+		random_number = random.randint(min_value, max_value)
+		rand_arr.append(random_number)
 
-    return rand_arr
+	return rand_arr
 
 
 if __name__ == "__main__":
-    items = random_array(5)
+	main_branch = random_array(10)
+	other_branch = random_array(8)
 
-    print(f"Creating new linked list with nodes {items}")
-    linked_list = LinkedList(*items)
-    print(linked_list)
+	# Create new branches here
+	branches: dict[str, list[int]] = {
+		"main": main_branch,
+		"other": other_branch,
+	}
 
-    random.seed()
-    random_index = random.randint(0, linked_list.size())
-    new_item, new_items, newer_items = 32, [15, 14], [16, 0, 12]
+	# Creating our NHeadedLinkedList
+	five_head = NHeadedLinkedList(branches)
+	print(f"Before merge: \n{five_head}")
+	print()
 
-    print(f"Inserting new node {new_item} at end")
-    linked_list.insert_at_end(new_item)
-    print(linked_list)
+	# Change these values to merge one branch to another at specific nodes
+	from_b, to_b = "other", "main"
+	merge_from_index = random.randint(0, len(other_branch))
+	merge_to_index = random.randint(0, len(main_branch))
 
-    print(f"Inserting new nodes {new_items} at head")
-    linked_list.insert_at_head(*new_items)
-    print(linked_list)
-    
-    print(f"Deleting last node")
-    linked_list.delete_last_node()
-    print(linked_list)
+	# Merging other branch to main
+	five_head.merge(from_b, to_b, (merge_from_index, merge_to_index))
+	print(f"After merge: \n{five_head}")
+	print()
 
-    try:
-        print(f"Inserting new nodes at index {random_index}")
-        linked_list.insert_at_middle(random_index, *newer_items)
-        print(linked_list)
-        
-        print(f"Deleting node at index {random_index}")
-        linked_list.delete_at_index(random_index)
-        print(linked_list)
-        
-        print(f"Fetching node at index {random_index}")
-        node = linked_list.get_node_at_index(random_index)
-        print(node)
-        print()
+	# Finding intersection
+	branches: list[LinkedList] = five_head.branches
+	branch1, branch2 = branches[0], branches[1]
+	intersect = find_intersection(branch1, branch2)
 
-        start, stop = -4, -4
-        print(f"Getting items b2n indexes {start} -> {stop}")
-        items = linked_list.items(start_index=start, stop_index=stop)
-        print(items)
-        print()
+	if intersect is None:
+		print(f"No intersection found b2n {branch1.name} and {branch2.name}")
+	else:
+		index1, index2 = intersect
+		print(f"Intersection found at {branch1.name}@index {index1} and {branch2.name}@index {index2}")
 
-    except IndexError as e:
-        print(e)
-    
-    value = random.choice(newer_items)
-    print(f"Fetching node with value: {value}")
-    index, node = linked_list.search(value)
-    print(f"Index: {index} Node: {node}")
-    print()
-
-    print(f"Fetching all node data in linked list")
-    print(linked_list.items())
+	# TODO: To prove that the branches (linked_lists) in five_head are merged we do 2 things:
+	# 1. Change nodes before merge and check that other branches are unaffected
+	# 2. Change nodes after merge and check that other branches reflect the changes
